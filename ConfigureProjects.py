@@ -4,17 +4,26 @@
 import os
 import logging
 import subprocess
+import argparse
+import shutil 
 
 from sys import platform
 
-GENERATOR_WINDOWS    = "Visual Studio 15 2017"          # CMake generator to use for Windows
-GENERATOR_LINUX      = ""                               # CMake generator to use for Linux
-GENERATOR_OSX        = ""                               # CMake generator to use for OS X
-API_DIR              = "API/"                           # Main directory for the API project  
-BUILD_DIR            = "build/"                         # Build subdirectory within project directories
-BUILD_SUBDIR_WINDOWS = "VS2017/"                        # Subdirectory within build for Windows projects
-BUILD_SUBDIR_LINUX   = ""                               # Subdirectory within build for Linux projects
-BUILD_SUBDIR_OSX     = ""                               # Subdirectory within build for OS X projects
+GENERATOR_WIN32    = "Visual Studio 15 2017"          # CMake generator to use for Windows x86
+GENERATOR_WIN64    = "Visual Studio 15 2017 Win64"    # CMake generator to use for Windows x64
+GENERATOR_LINUX32  = ""                               # CMake generator to use for Linux
+GENERATOR_LINUX64  = ""                               # CMake generator to use for Linux
+GENERATOR_OSX32    = ""                               # CMake generator to use for OS X
+GENERATOR_OSX64    = ""                               # CMake generator to use for OS X 
+API_DIR            = "API/"                           # Main directory for the API project  
+BUILD_DIR          = "build/"                         # Build subdirectory within project directories
+BUILD_SUBDIR_WIN32 = "VS2017_x86/"                    # Subdirectory within build for Windows x86 projects
+BUILD_SUBDIR_WIN64 = "VS2017_x64/"                    # Subdirectory within build for Windows x64 projects
+BUILD_SUBDIR_LINUX = ""                               # Subdirectory within build for Linux projects
+BUILD_SUBDIR_OSX   = ""                               # Subdirectory within build for OS X projects
+
+CMAKE_COMMANDS32  = ["cmake", "-G", "", "../../"]
+CMAKE_COMMANDS64  = ["cmake", "-G", "", "../../"]
 
 # ---------------------------------------------------------------------- #
 # - Context manager for changing the current working directory         - #
@@ -39,8 +48,8 @@ class cd:
 
 def GetWindowsCommand():
     logger.info("Detected Windows operating system.")
-    win32CMakeCommand = ["cmake", "-G", GENERATOR_WINDOWS, "../../"]
-    return win32CMakeCommand
+    CMAKE_COMMANDS32[2] = GENERATOR_WIN32
+    CMAKE_COMMANDS64[2] = GENERATOR_WIN64
 
 def GetLinuxCommand():
     logger.info("Detected Linux operating system.")
@@ -52,7 +61,7 @@ def GetOSXCommand():
 # - API Project Setup                                                  - #
 # ---------------------------------------------------------------------- #
 
-def SetupAPI(cmakeCommand, useShell, buildDir):
+def SetupAPI(cmakeCommand, useShell, buildDir, command):
     logger.info("Configuring API projects ...")
     logger.info("Verifying API directory '" + API_DIR + "'")
 
@@ -74,26 +83,21 @@ def SetupAPI(cmakeCommand, useShell, buildDir):
                     return
 
     with cd(buildPath):
-
-        # Build x86 projects/solutions
-        logger.info("\tcmake -G \"" + cmakeCommand[2] + "\" " + cmakeCommand[3] + "")
-        retVal = subprocess.check_call(cmakeCommand, stderr=subprocess.STDOUT, shell=useShell)
+        logger.info("\tcmake -G \"" + command[2] + "\" " + command[3] + "")
+        retVal = subprocess.check_call(command, stderr=subprocess.STDOUT, shell=useShell)
 
         if retVal == 0:
             logger.info("... returned " + str(retVal))
         else:
             logger.error("... returned " + str(retVal))
 
-        # Build x64 projects/solutions
-        cmakeCommand[2] += " Win64"
+# ---------------------------------------------------------------------- #
+# - Arguments                                                            #
+# ---------------------------------------------------------------------- #
 
-        logger.info("\tcmake -G \"" + cmakeCommand[2] + "\" " + cmakeCommand[3] + "")
-        retVal = subprocess.check_call(cmakeCommand, stderr=subprocess.STDOUT, shell=useShell)
-
-        if retVal == 0:
-            logger.info("... returned " + str(retVal))
-        else:
-            logger.error("... returned " + str(retVal))
+parser = argparse.ArgumentParser("ConfigureProjects")
+parser.add_argument("--clean", nargs="?", const=True, default=False, help="cleans all generated directories and files")
+args = parser.parse_args()
 
 # ---------------------------------------------------------------------- #
 # - Logger Setup                                                       - #
@@ -116,6 +120,19 @@ file_log_handler.setFormatter(formatter)
 stderr_log_handler.setFormatter(formatter)
 
 # ---------------------------------------------------------------------- #
+# - Check for clean                                                    - #
+# ---------------------------------------------------------------------- #\
+
+if args.clean is True:
+
+    if os.path.exists(API_DIR + BUILD_DIR):
+        logger.info("Cleaning '" + API_DIR + BUILD_DIR + "' ...")
+        shutil.rmtree(API_DIR + BUILD_DIR)
+
+    logger.info("... Cleaning complete.")
+    exit(0)
+
+# ---------------------------------------------------------------------- #
 # - Operating system entry                                             - #
 # ---------------------------------------------------------------------- #
 
@@ -123,18 +140,20 @@ logger.info("Beginning project configuration ...")
 
 cmakeCommand = [""]
 useShell     = False
-buildDir     = BUILD_DIR 
+buildDir32   = BUILD_DIR 
+buildDir64   = BUILD_DIR 
 
 if platform == "linux" or platform == "linux2":
-    cmakeCommand = GetLinuxCommand()
-    buildDir    += BUILD_SUBDIR_LINUX
+    GetLinuxCommand()
+    buildDir32  += BUILD_SUBDIR_LINUX32
 elif platform == "darwin":
-    cmakeCommand = GetOSXCommand()
-    buildDir    += BUILD_SUBDIR_OSX
+    GetOSXCommand()
+    buildDir32  += BUILD_SUBDIR_OSX32
 elif platform == "win32" or platform == "win64":
-    cmakeCommand = GetWindowsCommand()
+    GetWindowsCommand()
     useShell     = True
-    buildDir    += BUILD_SUBDIR_WINDOWS
+    buildDir32  += BUILD_SUBDIR_WIN32
+    buildDir64  += BUILD_SUBDIR_WIN64
 else:
     logger.error("Unsupported operating system. Cancelling build configuration.")
     exit(1)
@@ -143,5 +162,6 @@ else:
 # - Configure projects                                                 - #
 # ---------------------------------------------------------------------- #
 
-SetupAPI(cmakeCommand, useShell, buildDir)
+SetupAPI(cmakeCommand, useShell, buildDir32, CMAKE_COMMANDS32)
+SetupAPI(cmakeCommand, useShell, buildDir64, CMAKE_COMMANDS64)
 
