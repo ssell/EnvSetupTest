@@ -9,6 +9,9 @@ import shutil
 
 from sys import platform
 
+COMPILER_WIN       = "msvc140"                        # Compiler identifier added to library output (example: API_msvc140.dll)
+COMPILER_LINUX     = ""                               # Compiler identifier added to library output
+COMPILER_OSX       = ""                               # Compiler identifier added to library output
 GENERATOR_WIN32    = "Visual Studio 15 2017"          # CMake generator to use for Windows x86
 GENERATOR_WIN64    = "Visual Studio 15 2017 Win64"    # CMake generator to use for Windows x64
 GENERATOR_LINUX32  = ""                               # CMake generator to use for Linux
@@ -22,8 +25,9 @@ BUILD_SUBDIR_WIN64 = "VS2017_x64/"                    # Subdirectory within buil
 BUILD_SUBDIR_LINUX = ""                               # Subdirectory within build for Linux projects
 BUILD_SUBDIR_OSX   = ""                               # Subdirectory within build for OS X projects
 
-CMAKE_COMMANDS32  = ["cmake", "-G", "", "../../"]
-CMAKE_COMMANDS64  = ["cmake", "-G", "", "../../"]
+# "cmake -DPARAM_COMPILER=... -DPARAM_ARCH=... -G generator outputpath"
+CMAKE_COMMANDS32  = ["cmake", "-DPARAM_COMPILER=", "-DPARAM_ARCH=x86", "-G", "", "../../"]
+CMAKE_COMMANDS64  = ["cmake", "-DPARAM_COMPILER=", "-DPARAM_ARCH=x64", "-G", "", "../../"]
 
 # ---------------------------------------------------------------------- #
 # - Context manager for changing the current working directory         - #
@@ -48,8 +52,10 @@ class cd:
 
 def GetWindowsCommand():
     logger.info("Detected Windows operating system.")
-    CMAKE_COMMANDS32[2] = GENERATOR_WIN32
-    CMAKE_COMMANDS64[2] = GENERATOR_WIN64
+    CMAKE_COMMANDS32[1] += COMPILER_WIN
+    CMAKE_COMMANDS64[1] += COMPILER_WIN
+    CMAKE_COMMANDS32[4]  = GENERATOR_WIN32
+    CMAKE_COMMANDS64[4]  = GENERATOR_WIN64
 
 def GetLinuxCommand():
     logger.info("Detected Linux operating system.")
@@ -83,7 +89,7 @@ def SetupAPI(cmakeCommand, useShell, buildDir, command):
                     return
 
     with cd(buildPath):
-        logger.info("\tcmake -G \"" + command[2] + "\" " + command[3] + "")
+        logger.info("\tcmake " + command[1] + " " + command[2] + " " + command[3] + " \"" + command[4] + "\" " + command[5] + "")
         retVal = subprocess.check_call(command, stderr=subprocess.STDOUT, shell=useShell)
 
         if retVal == 0:
