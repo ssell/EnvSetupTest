@@ -43,6 +43,17 @@ class cd:
     def __exit__(self, etype, value, traceback):
         os.chdir(self.savedPath)
         logger.info("cd '" + self.savedPath + "'")
+    
+# ---------------------------------------------------------------------- #
+# - Clean Command                                                      - #
+# ---------------------------------------------------------------------- #
+
+def Clean():
+    if os.path.exists(API_DIR + BUILD_DIR):
+        logger.info("Cleaning '" + API_DIR + BUILD_DIR + "' ...")
+        shutil.rmtree(API_DIR + BUILD_DIR)
+
+    logger.info("... Cleaning complete.")
 
 # ---------------------------------------------------------------------- #
 # - OS CMake Commands                                                  - #
@@ -107,6 +118,7 @@ def SetupAPI(cmakeCommand, useShell, buildDir, command):
 
 parser = argparse.ArgumentParser("ConfigureProjects")
 parser.add_argument("--clean", nargs="?", const=True, default=False, help="cleans all generated directories and files")
+parser.add_argument("--rebuild", nargs="?", const=True, default=False, help="cleans all generated directories and files prior to running cmake")
 args = parser.parse_args()
 
 # ---------------------------------------------------------------------- #
@@ -131,16 +143,14 @@ stderr_log_handler.setFormatter(formatter)
 
 # ---------------------------------------------------------------------- #
 # - Check for clean                                                    - #
-# ---------------------------------------------------------------------- #\
+# ---------------------------------------------------------------------- #
 
 if args.clean is True:
-
-    if os.path.exists(API_DIR + BUILD_DIR):
-        logger.info("Cleaning '" + API_DIR + BUILD_DIR + "' ...")
-        shutil.rmtree(API_DIR + BUILD_DIR)
-
-    logger.info("... Cleaning complete.")
+    Clean()
     exit(0)
+
+if args.rebuild is True:
+    Clean()
 
 # ---------------------------------------------------------------------- #
 # - Operating system entry                                             - #
