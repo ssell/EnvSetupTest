@@ -7,7 +7,11 @@ cmake_minimum_required(VERSION 3.9)
 set(PARAM_COMPILER "" CACHE STRING "Compiler identifier added to library output name (FOO_PARAM_COMPILER => FOO_msvc140.dll)")
 set(PARAM_ARCH "x86" CACHE STRING "Target output architecture (x86 or x64)")
 
-project("BuildAPI_${PARAM_COMPILER}")
+if(PARAM_COMPILER STREQUAL "")
+    project("BuildAPI")
+else()
+    project("BuildAPI_${PARAM_COMPILER}")
+endif()
 
 # Set source directories
 set(_src_root_path "${CMAKE_SOURCE_DIR}/src")
@@ -33,7 +37,7 @@ file(
 add_library("${PROJECT_NAME}" ${_source_list})
 
 # Set output name (use for libraries only)
-# This will change the name from API.lib to API_msvc140.lib 
+# This will change the name from API.lib to API_msvc141.lib 
 # https://stackoverflow.com/a/31139717/735425
 set_target_properties("${PROJECT_NAME}" PROPERTIES DEBUG_POSTFIX "d")
 
