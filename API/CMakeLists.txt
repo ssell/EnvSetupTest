@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.9)
 
 # https://www.codeproject.com/Articles/1181455/A-CMake-tutorial-for-Visual-Cplusplus-developers
 
+# Force the use of C++17 (should throw a warning or error if available compiler does not support the standard)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # Input parameters
 # https://stackoverflow.com/questions/8709877/cmake-string-options
 set(PARAM_COMPILER "" CACHE STRING "Compiler identifier added to library output name (FOO_PARAM_COMPILER => FOO_msvc140.dll)")
@@ -21,9 +25,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/${PARAM_ARCH}")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/${PARAM_ARCH}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/${PARAM_ARCH}")
 
-# Specify to use the latest C++ standard available
-add_compile_options(-std=c++latest)
-
 # Create a list of source files
 file(
     GLOB_RECURSE _source_list
@@ -40,6 +41,12 @@ add_library("${PROJECT_NAME}" ${_source_list})
 # This will change the name from API.lib to API_msvc141.lib 
 # https://stackoverflow.com/a/31139717/735425
 set_target_properties("${PROJECT_NAME}" PROPERTIES DEBUG_POSTFIX "d")
+
+if(PARAM_ARCH STREQUAL "x86")
+    set_target_properties("${PROJECT_NAME}" PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
+else()
+    set_target_properties("${PROJECT_NAME}" PROPERTIES COMPILE_FLAGS "-m64" LINK_FLAGS "-m64")
+endif()
 
 # Discover and add the source files. This will add subdirectories as filters.
 # https://stackoverflow.com/a/33813154/735425

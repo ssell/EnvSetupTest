@@ -9,19 +9,21 @@ import shutil
 
 from sys import platform
 
-COMPILER_WIN       = "msvc141"                        # Compiler identifier added to library output (example: API_msvc141.dll)
-COMPILER_LINUX     = ""                               # Compiler identifier added to library output
-COMPILER_OSX       = ""                               # Compiler identifier added to library output
-GENERATOR_WIN32    = "Visual Studio 15 2017"          # CMake generator to use for Windows x86
-GENERATOR_WIN64    = "Visual Studio 15 2017 Win64"    # CMake generator to use for Windows x64
-GENERATOR_LINUX    = "Unix Makefiles"                 # CMake generator to use for Linux
-GENERATOR_OSX      = "Xcode"                          # CMake generator to use for OS X
-API_DIR            = "API/"                           # Main directory for the API project  
-BUILD_DIR          = "build/"                         # Build subdirectory within project directories
-BUILD_SUBDIR_WIN32 = "VS2017_x86/"                    # Subdirectory within build for Windows x86 projects
-BUILD_SUBDIR_WIN64 = "VS2017_x64/"                    # Subdirectory within build for Windows x64 projects
-BUILD_SUBDIR_LINUX = "linux"                          # Subdirectory within build for Linux projects
-BUILD_SUBDIR_OSX   = "osx"                            # Subdirectory within build for OS X projects
+COMPILER_WIN         = "msvc141"                        # Compiler identifier added to library output (example: API_msvc141.dll)
+COMPILER_LINUX       = ""                               # Compiler identifier added to library output
+COMPILER_OSX         = ""                               # Compiler identifier added to library output
+GENERATOR_WIN32      = "Visual Studio 15 2017"          # CMake generator to use for Windows x86
+GENERATOR_WIN64      = "Visual Studio 15 2017 Win64"    # CMake generator to use for Windows x64
+GENERATOR_LINUX      = "Unix Makefiles"                 # CMake generator to use for Linux
+GENERATOR_OSX        = "Xcode"                          # CMake generator to use for OS X
+API_DIR              = "API/"                           # Main directory for the API project  
+BUILD_DIR            = "build/"                         # Build subdirectory within project directories
+BUILD_SUBDIR_WIN32   = "VS2017_x86/"                    # Subdirectory within build for Windows x86 projects
+BUILD_SUBDIR_WIN64   = "VS2017_x64/"                    # Subdirectory within build for Windows x64 projects
+BUILD_SUBDIR_LINUX32 = "linux_x86/"                     # Subdirectory within build for Linux x86 projects
+BUILD_SUBDIR_LINUX64 = "linux_x64/"                     # Subdirectory within build for Linux x64 projects
+BUILD_SUBDIR_OSX32   = "osx_x86/"                       # Subdirectory within build for OS X x86 projects
+BUILD_SUBDIR_OSX64   = "osx_x64/"                       # Subdirectory within build for OS X x64 projects
 
 # "cmake -DPARAM_COMPILER=... -DPARAM_ARCH=... ...additionalarguments... -G generator outputpath"
 CMAKE_COMMANDS32  = ["cmake", "-DPARAM_COMPILER=", "-DPARAM_ARCH=x86", "", "-G", "", "../../"]
@@ -70,8 +72,8 @@ def GetLinuxCommand():
     logger.info("Detected Linux operating system.")
     CMAKE_COMMANDS32[1] += COMPILER_LINUX
     CMAKE_COMMANDS64[1] += COMPILER_LINUX
-    CMAKE_COMMANDS32[3]  = "-DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS=-m32"
-    CMAKE_COMMANDS64[3]  = "-DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS=-m64"
+    CMAKE_COMMANDS32[3]  = "-DCMAKE_CXX_COMPILER=/usr/bin/g++"
+    CMAKE_COMMANDS64[3]  = "-DCMAKE_CXX_COMPILER=/usr/bin/g++"
     CMAKE_COMMANDS32[5]  = GENERATOR_LINUX
     CMAKE_COMMANDS64[5]  = GENERATOR_LINUX
 
@@ -104,7 +106,7 @@ def SetupAPI(cmakeCommand, useShell, buildDir, command):
                     return
 
     with cd(buildPath):
-        logger.info("\tcmake " + command[1] + " " + command[2] + " " + command[3] + "  " + command[4] + " \"" + command[5] + "\" " + command[6] + "")
+        logger.info(" ".join(command))
         retVal = subprocess.check_call(command, stderr=subprocess.STDOUT, shell=useShell)
 
         if retVal == 0:
@@ -165,15 +167,17 @@ buildDir64   = BUILD_DIR
 
 if platform == "linux" or platform == "linux2":
     GetLinuxCommand()
-    buildDir32  += BUILD_SUBDIR_LINUX32
+    buildDir32 += BUILD_SUBDIR_LINUX32
+    buildDir64 += BUILD_SUBDIR_LINUX64
 elif platform == "darwin":
     GetOSXCommand()
-    buildDir32  += BUILD_SUBDIR_OSX32
+    buildDir32 += BUILD_SUBDIR_OSX32
+    buildDir64 += BUILD_SUBDIR_OSX64
 elif platform == "win32" or platform == "win64":
     GetWindowsCommand()
     useShell     = True
-    buildDir32  += BUILD_SUBDIR_WIN32
-    buildDir64  += BUILD_SUBDIR_WIN64
+    buildDir32 += BUILD_SUBDIR_WIN32
+    buildDir64 += BUILD_SUBDIR_WIN64
 else:
     logger.error("Unsupported operating system. Cancelling build configuration.")
     exit(1)
