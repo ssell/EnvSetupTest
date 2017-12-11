@@ -52,9 +52,15 @@ class cd:
 # ---------------------------------------------------------------------- #
 
 def Clean():
+    # Clean API
     if os.path.exists(API_DIR + BUILD_DIR):
         logger.info("Cleaning '" + API_DIR + BUILD_DIR + "' ...")
         shutil.rmtree(API_DIR + BUILD_DIR)
+
+    # Clean Build All
+    if os.path.exists(BUILD_DIR):
+        logger.info("Cleaning '" + BUILD_DIR + "' ...")
+        shutil.rmtree(BUILD_DIR)
 
     logger.info("... Cleaning complete.")
 
@@ -91,7 +97,7 @@ def SetupAPI(cmakeCommand, useShell, buildDir, command):
 
     if not os.path.exists(API_DIR):
         logger.error("API directory not found. Exiting API setup.")
-        return
+        return False
 
     buildPath = API_DIR + buildDir 
 
@@ -104,7 +110,7 @@ def SetupAPI(cmakeCommand, useShell, buildDir, command):
             except OSError as e:
                 if e.errno != errno.EEXIST:
                     logger.error("Failed to create build directory.")
-                    return
+                    return False
 
     with cd(buildPath):
         logger.info(" ".join(command))
@@ -114,6 +120,40 @@ def SetupAPI(cmakeCommand, useShell, buildDir, command):
             logger.info("... returned " + str(retVal))
         else:
             logger.error("... returned " + str(retVal))
+            return False
+
+    return True
+
+# ---------------------------------------------------------------------- #
+# - Build All Solution                                                   #
+# ---------------------------------------------------------------------- #
+
+# Currently Visual Studio only. Creates a solution file with all other projects.
+
+def SetupBuildAll(buildDir):
+    logger.info("Configuring VS Build All ...")
+    logger.info("Verifying Build All directory '" + buildDir + "'")
+
+    if not os.path.exists(buildDir):
+        logger.info("Build directory not found. Creating directory ...")
+        try:
+            os.makedirs(buildDir)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                logger.error("Failed to create build directory.")
+                return False
+
+    with cd(buildDir):
+        logger.info("cmake -DPARAM_COMPILER=" + COMPILER_WIN + " ../../")
+        retVal = subprocess.check_call(["cmake", "-DPARAM_COMPILER=" + COMPILER_WIN, "../../"], stderr=subprocess.STDOUT, shell=useShell)
+
+        if retVal == 0:
+            logger.info("... returned " + str(retVal))
+        else:
+            logger.error("... returned " + str(retVal))
+            return False
+
+    return True
 
 # ---------------------------------------------------------------------- #
 # - Arguments                                                            #
@@ -187,6 +227,15 @@ else:
 # - Configure projects                                                 - #
 # ---------------------------------------------------------------------- #
 
-SetupAPI(cmakeCommand, useShell, buildDir32, CMAKE_COMMANDS32)
-SetupAPI(cmakeCommand, useShell, buildDir64, CMAKE_COMMANDS64)
+if SetupAPI(cmakeCommand, useShell, buildDir32, CMAKE_COMMANDS32) is False:
+    exit(1)
+
+if SetupAPI(cmakeCommand, useShell, buildDir64, CMAKE_COMMANDS64) is False:
+    exit(1)
+
+if SetupBuildAll(buildDir32) is False:
+    exit(1)
+
+if SetupBuildAll(buildDir64) is False:
+    exit(1)
 
