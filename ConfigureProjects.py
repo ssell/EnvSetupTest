@@ -5,6 +5,7 @@ import os
 import logging
 import subprocess
 import argparse
+import sys
 import shutil 
 
 from sys import platform
@@ -136,12 +137,12 @@ logging.basicConfig(format="[%(asctime)s] [%(levelname)s] %(message)s",
 logger             = logging.getLogger("ConfigureProjects")
 formatter          = logging.Formatter()
 file_log_handler   = logging.FileHandler("ConfigureProjects.log")
-stderr_log_handler = logging.StreamHandler()
+stdout_log_handler = logging.StreamHandler(sys.stdout)
 
 logger.addHandler(file_log_handler)
-logger.addHandler(stderr_log_handler)
+logger.addHandler(stdout_log_handler)
 file_log_handler.setFormatter(formatter)
-stderr_log_handler.setFormatter(formatter)
+stdout_log_handler.setFormatter(formatter)
 
 # ---------------------------------------------------------------------- #
 # - Check for clean                                                    - #
