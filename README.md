@@ -1,3 +1,5 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/6v29dn17rmw99wwn?svg=true)](https://ci.appveyor.com/project/ssell/envsetuptest)
+
 # EnvSetupTest
 
 Repository for testing the setup of a C++ development environment using:
