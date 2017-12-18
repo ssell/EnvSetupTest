@@ -12,6 +12,7 @@ import zipfile
 
 from sys import platform
 
+PROJECT_NAME         = "EnvSetupTest"
 COMPILER_WIN         = "msvc141"                        # Compiler identifier added to library output (example: API_msvc141.dll)
 COMPILER_LINUX       = ""                               # Compiler identifier added to library output
 COMPILER_OSX         = ""                               # Compiler identifier added to library output
@@ -19,7 +20,9 @@ GENERATOR_WIN32      = "Visual Studio 15 2017"          # CMake generator to use
 GENERATOR_WIN64      = "Visual Studio 15 2017 Win64"    # CMake generator to use for Windows x64
 GENERATOR_LINUX      = "Unix Makefiles"                 # CMake generator to use for Linux
 GENERATOR_OSX        = "Xcode"                          # CMake generator to use for OS X
-API_DIR              = "API/"                           # Main directory for the API project
+API_DIR              = "API/"                           # Main directory for the API project(s)
+TEST_DIR             = "Test/"                          # Main directory for the Test project(s)
+BIN_DIR              = "bin/"                           # Binaries subdirectory within project directories
 BUILD_DIR            = "build/"                         # Build subdirectory within project directories
 BUILD_SUBDIR_WIN32   = "VS2017_x86/"                    # Subdirectory within build for Windows x86 projects
 BUILD_SUBDIR_WIN64   = "VS2017_x64/"                    # Subdirectory within build for Windows x64 projects
@@ -27,7 +30,7 @@ BUILD_SUBDIR_LINUX32 = "linux_x86/"                     # Subdirectory within bu
 BUILD_SUBDIR_LINUX64 = "linux_x64/"                     # Subdirectory within build for Linux x64 projects
 BUILD_SUBDIR_OSX32   = "osx_x86/"                       # Subdirectory within build for OS X x86 projects
 BUILD_SUBDIR_OSX64   = "osx_x64/"                       # Subdirectory within build for OS X x64 projects  
-VENDOR_DIR           = "vendors/"                        # 
+VENDOR_DIR           = "vendors/"                       # Third-party dependency directory
 VENDOR_URL           = "https://s3.amazonaws.com/phoenixrenderer/vendor/PhoenixVendors_Latest.zip"
 VENDOR_TEMP          = "vendors_temp.zip"
 
@@ -81,11 +84,20 @@ def Clean():
     if os.path.exists(API_DIR + BUILD_DIR):
         logger.info("Cleaning '" + API_DIR + BUILD_DIR + "' ...")
         shutil.rmtree(API_DIR + BUILD_DIR)
+        logger.info("Cleaning '" + API_DIR + BIN_DIR + "' ...")
+        shutil.rmtree(API_DIR + BIN_DIR)
+
+    # Clean Test
+    if os.path.exists(TEST_DIR + BUILD_DIR):
+        logger.info("Cleaning '" + TEST_DIR + BUILD_DIR + "' ...")
+        shutil.rmtree(TEST_DIR + BUILD_DIR)
+        logger.info("Cleaning '" + TEST_DIR + BIN_DIR + "' ...")
+        shutil.rmtree(TEST_DIR + BIN_DIR)
 
     # Clean Build All
-    if os.path.exists(BUILD_DIR):
-        logger.info("Cleaning '" + BUILD_DIR + "' ...")
-        shutil.rmtree(BUILD_DIR)
+    if os.path.exists(PROJECT_NAME):
+        logger.info("Cleaning '" + PROJECT_NAME + "' ...")
+        shutil.rmtree(PROJECT_NAME)
 
     logger.info("... Cleaning complete.")
 
@@ -146,59 +158,33 @@ def GetVendors():
     return True
 
 # ---------------------------------------------------------------------- #
-# - API Project Setup                                                  - #
+# - Project Setup                                                      - #
 # ---------------------------------------------------------------------- #
 
-def SetupAPI(cmakeCommand, useShell, buildDir, command):
-    logger.info("Configuring API projects ...")
-    logger.info("Verifying API directory '" + API_DIR + "'")
+def SetupProject(projectName, projectDir, cmakeCommand, useShell, buildDir, command):
+    logger.info("Configuring " + projectName + " projects ...")
+    logger.info("Verifying " + projectName + " directory '" + projectDir + "'")
 
-    if not os.path.exists(API_DIR):
-        logger.error("API directory not found. Exiting API setup.")
+    if not os.path.exists(projectDir):
+        logger.error(projectName + " directory not found. Exiting " + projectName + " setup.")
         return False
 
-    buildPath = API_DIR + buildDir 
+    buildPath = projectDir + buildDir
 
-    logger.info("Verifying Build directory '" + buildPath + "'")
+    logger.info("Verifying Test directory '" + buildPath + "'")
 
     if MakeDirectory(buildPath) is False:
-        return False;
+        return False
 
     with cd(buildPath):
         logger.info(" ".join(command))
         retVal = subprocess.check_call(command, stderr=subprocess.STDOUT, shell=useShell)
 
         if retVal == 0:
-            logger.info("... returned " + str(retVal))
+            logger.info("... " + projectName + " setup returned " + str(retVal))
         else:
-            logger.error("... returned " + str(retVal))
+            logger.error("... " + projectName + " setup returned " + str(retVal))
             return False
-
-    return True
-
-# ---------------------------------------------------------------------- #
-# - Build All Solution                                                   #
-# ---------------------------------------------------------------------- #
-
-# Currently Visual Studio only. Creates a solution file with all other projects.
-
-def SetupBuildAll(buildDir):
-    logger.info("Configuring VS Build All ...")
-    logger.info("Verifying Build All directory '" + buildDir + "'")
-
-    if MakeDirectory(buildDir) is False:
-        return False;
-
-    with cd(buildDir):
-        logger.info("cmake -DPARAM_COMPILER=" + COMPILER_WIN + " ../../")
-        retVal = subprocess.check_call(["cmake", "-DPARAM_COMPILER=" + COMPILER_WIN, "../../"], stderr=subprocess.STDOUT, shell=useShell)
-
-        if retVal == 0:
-            logger.info("... returned " + str(retVal))
-        else:
-            logger.error("... returned " + str(retVal))
-            return False
-
     return True
 
 # ---------------------------------------------------------------------- #
@@ -277,15 +263,64 @@ else:
 # - Configure projects                                                 - #
 # ---------------------------------------------------------------------- #
 
-if SetupAPI(cmakeCommand, useShell, buildDir32, CMAKE_COMMANDS32) is False:
+successArray = [["API x86", "Success"],
+                ["API x64", "Success"],
+                ["Test x86", "Success"],
+                ["Test x64", "Success"],
+                ["Build All x86", "Success"],
+                ["Build All x64", "Success"]]
+
+failureCount = 0
+
+# Setup API Project
+if SetupProject("API", API_DIR, cmakeCommand, useShell, buildDir32, CMAKE_COMMANDS32) is False:
+    successArray[0][1] = "Failed"
+    failureCount += 1
+
+if SetupProject("API", API_DIR, cmakeCommand, useShell, buildDir64, CMAKE_COMMANDS64) is False:
+    successArray[1][1] = "Failed"
+    failureCount += 1
+
+# Setup Test Project
+if SetupProject("Test", TEST_DIR, cmakeCommand, useShell, buildDir32, CMAKE_COMMANDS32) is False:
+    successArray[2][1] = "Failed"
+    failureCount += 1
+
+if SetupProject("Test", TEST_DIR, cmakeCommand, useShell, buildDir64, CMAKE_COMMANDS64) is False:
+    successArray[3][1] = "Failed"
+    failureCount += 1
+
+# If Windows, make a Build All solution ...
+if platform == "win32" or platform == "win64":
+    MakeDirectory(PROJECT_NAME)
+
+    # The Build All project has to step one directory further back
+    CMAKE_COMMANDS32[-1] = "../../../"
+    CMAKE_COMMANDS64[-1] = "../../../"
+
+    if SetupProject(PROJECT_NAME, PROJECT_NAME + "/", cmakeCommand, useShell, buildDir32, CMAKE_COMMANDS32) is False:
+        successArray[4][1] = "Failed"
+        failureCount += 1
+
+    if SetupProject(PROJECT_NAME, PROJECT_NAME + "/", cmakeCommand, useShell, buildDir64, CMAKE_COMMANDS64) is False:
+        successArray[5][1] = "Failed"
+        failureCount += 1
+else:
+    successArray[4][1] = "Skipped"
+    successArray[5][1] = "Skipped"
+
+# ---------------------------------------------------------------------- #
+# - Print Results                                                      - #
+# ---------------------------------------------------------------------- #
+
+successCount = 6 - failureCount 
+
+logger.info("-- Configuration Result (" + str(successCount) + " succeeded, " + str(failureCount) + " failed) --")
+
+for pair in successArray:
+    logger.info("\t" + pair[0] + " ... " + pair[1])
+
+if failureCount > 0:
     exit(1)
 
-if SetupAPI(cmakeCommand, useShell, buildDir64, CMAKE_COMMANDS64) is False:
-    exit(1)
-
-if SetupBuildAll(buildDir32) is False:
-    exit(1)
-
-if SetupBuildAll(buildDir64) is False:
-    exit(1)
 

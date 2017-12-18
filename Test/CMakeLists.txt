@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.9)
 
-# https://www.codeproject.com/Articles/1181455/A-CMake-tutorial-for-Visual-Cplusplus-developers
-
 # Force the use of C++17 (should throw a warning or error if available compiler does not support the standard)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,11 +8,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # https://stackoverflow.com/questions/8709877/cmake-string-options
 set(PARAM_COMPILER "" CACHE STRING "Compiler identifier added to library output name (FOO_PARAM_COMPILER => FOO_msvc140.dll)")
 set(PARAM_ARCH "x86" CACHE STRING "Target output architecture (x86 or x64)")
+set(COMPILER_EXTENSION "")
 
 if(PARAM_COMPILER STREQUAL "")
-    project("BuildAPI")
+    project("TestAPI")
 else()
-    project("BuildAPI_${PARAM_COMPILER}")
+    project("TestAPI_${PARAM_COMPILER}")
+    set(COMPILER_EXTENSION "_${PARAM_COMPILER}")
 endif()
 
 # Set source directories
@@ -35,19 +35,25 @@ file(
     "${_src_root_path}/*.inl"
 )
 
-# Add a new library to the project using the specified source list
-add_library(${PROJECT_NAME} ${_source_list})
-
-# Set output name (use for libraries only)
-# This will change the name from API.lib to API_msvc141.lib 
-# https://stackoverflow.com/a/31139717/735425
-set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "d")
+# Add a new executable to the project using the specified source list
+add_executable(${PROJECT_NAME} ${_source_list})
 
 if(PARAM_ARCH STREQUAL "x86")
     set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
 else()
     set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-m64" LINK_FLAGS "-m64")
 endif()
+
+# Add include directories
+target_include_directories(${PROJECT_NAME} PUBLIC "../vendors/googletest-1.8.838/include/")
+
+# Add library dependencies
+target_link_libraries(${PROJECT_NAME} debug "../../../API/bin/${PARAM_ARCH}/Debug/BuildAPI${COMPILER_EXTENSION}d") 
+target_link_libraries(${PROJECT_NAME} debug "../../../vendors/googletest-1.8.838/${PARAM_COMPILER}/${PARAM_ARCH}/gtestd")
+target_link_libraries(${PROJECT_NAME} debug "../../../vendors/googletest-1.8.838/${PARAM_COMPILER}/${PARAM_ARCH}/gtest_maind")
+target_link_libraries(${PROJECT_NAME} optimized "../../../API/bin/${PARAM_ARCH}/Release/BuildAPI${COMPILER_EXTENSION}")
+target_link_libraries(${PROJECT_NAME} optimized "../../../vendors/googletest-1.8.838/${PARAM_COMPILER}/${PARAM_ARCH}/gtest")
+target_link_libraries(${PROJECT_NAME} optimized "../../../vendors/googletest-1.8.838/${PARAM_COMPILER}/${PARAM_ARCH}/gtest_main")
 
 # Discover and add the source files. This will add subdirectories as filters.
 # https://stackoverflow.com/a/33813154/735425
