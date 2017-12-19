@@ -4,18 +4,22 @@
 
 namespace API
 {
-    template<typename T>
-    class Vector3 
+    class Vector3F 
     {
     public:
 
-        Vector3();
-        ~Vector3();
+        Vector3F(float x = 0.0f, float y = 0.0f, float z = 0.0f);
+        Vector3F(Vector3F const& other);
+        ~Vector3F();
+
+        float Dot(Vector3F const& other) const;
+
+        union { float x, r, u; };
+        union { float y, g, v; };
+        union { float z, b, w; };
 
     protected:
 
     private:
     };
 }
-
-#include "Vector3.inl"

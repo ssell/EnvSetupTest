@@ -45,6 +45,7 @@ else()
 endif()
 
 # Add include directories
+target_include_directories(${PROJECT_NAME} PUBLIC "../API/src/")
 target_include_directories(${PROJECT_NAME} PUBLIC "../vendors/googletest-1.8.838/include/")
 
 # Add library dependencies
