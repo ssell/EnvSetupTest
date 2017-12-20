@@ -28,8 +28,6 @@ BUILD_SUBDIR_WIN32   = "VS2017_x86/"                    # Subdirectory within bu
 BUILD_SUBDIR_WIN64   = "VS2017_x64/"                    # Subdirectory within build for Windows x64 projects
 BUILD_SUBDIR_LINUX32 = "linux_x86/"                     # Subdirectory within build for Linux x86 projects
 BUILD_SUBDIR_LINUX64 = "linux_x64/"                     # Subdirectory within build for Linux x64 projects
-BUILD_SUBDIR_OSX32   = "osx_x86/"                       # Subdirectory within build for OS X x86 projects
-BUILD_SUBDIR_OSX64   = "osx_x64/"                       # Subdirectory within build for OS X x64 projects  
 VENDOR_DIR           = "vendors/"                       # Third-party dependency directory
 VENDOR_URL           = "https://s3.amazonaws.com/phoenixrenderer/vendor/PhoenixVendors_Latest.zip"
 VENDOR_TEMP          = "vendors_temp.zip"
@@ -161,7 +159,7 @@ def GetVendors():
 # - Project Setup                                                      - #
 # ---------------------------------------------------------------------- #
 
-def SetupProject(projectName, projectDir, cmakeCommand, useShell, buildDir, command):
+def SetupProject(projectName, projectDir, useShell, buildDir, command):
     logger.info("Configuring " + projectName + " projects ...")
     logger.info("Verifying " + projectName + " directory '" + projectDir + "'")
 
@@ -237,7 +235,6 @@ if GetVendors() is False:
 
 logger.info("Beginning project configuration ...")
 
-cmakeCommand = [""]
 useShell     = False
 buildDir32   = BUILD_DIR 
 buildDir64   = BUILD_DIR 
@@ -246,10 +243,6 @@ if platform == "linux" or platform == "linux2":
     GetLinuxCommand()
     buildDir32 += BUILD_SUBDIR_LINUX32
     buildDir64 += BUILD_SUBDIR_LINUX64
-elif platform == "darwin":
-    GetOSXCommand()
-    buildDir32 += BUILD_SUBDIR_OSX32
-    buildDir64 += BUILD_SUBDIR_OSX64
 elif platform == "win32" or platform == "win64":
     GetWindowsCommand()
     useShell     = True
@@ -273,20 +266,20 @@ successArray = [["API x86", "Success"],
 failureCount = 0
 
 # Setup API Project
-if SetupProject("API", API_DIR, cmakeCommand, useShell, buildDir32, CMAKE_COMMANDS32) is False:
+if SetupProject("API", API_DIR, useShell, buildDir32, CMAKE_COMMANDS32) is False:
     successArray[0][1] = "Failed"
     failureCount += 1
 
-if SetupProject("API", API_DIR, cmakeCommand, useShell, buildDir64, CMAKE_COMMANDS64) is False:
+if SetupProject("API", API_DIR, useShell, buildDir64, CMAKE_COMMANDS64) is False:
     successArray[1][1] = "Failed"
     failureCount += 1
 
 # Setup Test Project
-if SetupProject("Test", TEST_DIR, cmakeCommand, useShell, buildDir32, CMAKE_COMMANDS32) is False:
+if SetupProject("Test", TEST_DIR, useShell, buildDir32, CMAKE_COMMANDS32) is False:
     successArray[2][1] = "Failed"
     failureCount += 1
 
-if SetupProject("Test", TEST_DIR, cmakeCommand, useShell, buildDir64, CMAKE_COMMANDS64) is False:
+if SetupProject("Test", TEST_DIR, useShell, buildDir64, CMAKE_COMMANDS64) is False:
     successArray[3][1] = "Failed"
     failureCount += 1
 
@@ -298,11 +291,11 @@ if platform == "win32" or platform == "win64":
     CMAKE_COMMANDS32[-1] = "../../../"
     CMAKE_COMMANDS64[-1] = "../../../"
 
-    if SetupProject(PROJECT_NAME, PROJECT_NAME + "/", cmakeCommand, useShell, buildDir32, CMAKE_COMMANDS32) is False:
+    if SetupProject(PROJECT_NAME, PROJECT_NAME + "/", useShell, buildDir32, CMAKE_COMMANDS32) is False:
         successArray[4][1] = "Failed"
         failureCount += 1
 
-    if SetupProject(PROJECT_NAME, PROJECT_NAME + "/", cmakeCommand, useShell, buildDir64, CMAKE_COMMANDS64) is False:
+    if SetupProject(PROJECT_NAME, PROJECT_NAME + "/", useShell, buildDir64, CMAKE_COMMANDS64) is False:
         successArray[5][1] = "Failed"
         failureCount += 1
 else:

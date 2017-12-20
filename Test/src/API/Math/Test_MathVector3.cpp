@@ -4,7 +4,7 @@
 
 //------------------------------------------------------------------------------------------
 
-class Vector3Test : public ::testing::Test 
+class Test_Vector3 : public ::testing::Test 
 {
 public:
 
@@ -25,7 +25,7 @@ private:
 
 //------------------------------------------------------------------------------------------
 
-TEST_F(Vector3Test, Creation)
+TEST_F(Test_Vector3, Creation)
 {
     const auto x = float{ 0.0f };
     const auto y = float{ 1.0f };
@@ -38,7 +38,7 @@ TEST_F(Vector3Test, Creation)
     EXPECT_TRUE(API::IsEqual(base.z, z));
 }
 
-TEST_F(Vector3Test, CopyConstructor)
+TEST_F(Test_Vector3, CopyConstructor)
 {
     const auto x = float{ 0.0f };
     const auto y = float{ 1.0f };
@@ -52,7 +52,7 @@ TEST_F(Vector3Test, CopyConstructor)
     EXPECT_TRUE(API::IsEqual(vecB.z, z));
 }
 
-TEST_F(Vector3Test, DotProduct)
+TEST_F(Test_Vector3, DotProduct)
 {
     const auto vecA = API::Vector3F{ 0.0f, 1.0f, 2.0f };
     const auto vecB = API::Vector3F{ 3.0f, 4.0f, 5.0f };
