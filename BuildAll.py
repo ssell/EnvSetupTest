@@ -8,7 +8,6 @@ import sys
 
 from sys import platform
 
-MSBUILD_PATH = os.getenv("MSBUILD_PATH", "C:/Program Files (x86)/MSBuild/12.0/Bin/MsBuild.exe")
 BUILDALL_DIR = "EnvSetupTest/build/"
 
 # ---------------------------------------------------------------------- #
@@ -41,14 +40,6 @@ def BuildAllLinux():
 
 def BuildAllWindows():
     logger.info("Building all Window projects ...")
-    logger.info("Looking for MSBuild at '" + MSBUILD_PATH + "' ...")
-
-    if not os.path.exists(MSBUILD_PATH):
-        logger.error("Failed to find MSBuild. Exiting build.")
-        return False
-        
-
-    logger.info("... Found MSBuild.")
     logger.info("Looking for build all directory '" + BUILDALL_DIR + "' ...")
 
     if not os.path.exists(BUILDALL_DIR):
@@ -64,14 +55,15 @@ def BuildAllWindows():
                     for name in files 
                     if name.endswith(".sln")]
 
-        buildType = ""
+        commandList = ["msbuild", "", "/t:build", "/p:Configuration=Release"]
 
         if args.clean is True:
-            buildType = "/t:clean"
+            commandList[2] = "/t:clean"
         elif args.rebuild is True:
-            buildType = "/t:rebuild"
+            commandList[2] = "/t:rebuild"
 
-        commandList = [os.path.abspath(MSBUILD_PATH), "", buildType]
+        if args.debug is True:
+            commandList[3] = "/p:Configuration=Debug"
 
         for slnFile in slnFiles:
             logger.info("Found sln file '" + slnFile + "' ...")
@@ -96,6 +88,7 @@ def BuildAllWindows():
 parser = argparse.ArgumentParser("ConfigureProjects")
 parser.add_argument("--clean", nargs="?", const=True, default=False, help="cleans all generated directories and files")
 parser.add_argument("--rebuild", nargs="?", const=True, default=False, help="cleans all generated directories and files prior to running cmake")
+parser.add_argument("--debug", nargs="?", const=True, default=False, help="builds debug configuration of all projects")
 args = parser.parse_args()
 
 # ---------------------------------------------------------------------- #
