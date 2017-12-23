@@ -1,0 +1,25 @@
+version: 0.0.{build}
+image: Visual Studio 2017
+build_script:
+- ps: >-
+    .\ConfigureProjects.py --rebuild
+
+    .\BuildAll.py
+test_script:
+- ps: >-
+    $webclient = New-Object 'System.Net.WebClient'
+
+
+    if ([Environment]::Is64BitOperatingSystem)
+
+    {
+        .\Test\bin\x64\Release\TestAPI_msvc141.exe --gtest_output=xml:TestAPI_x64.xml
+        $webclient.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\TestAPI_x64.xml))
+    }
+
+    else
+
+    {
+        .\Test\bin\x86\Release\TestAPI_msvc141.exe --gtest_output=xml:TestAPI_x86.xml
+        $webclient.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\xml:TestAPI_x86.xml))
+    }
