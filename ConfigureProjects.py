@@ -82,6 +82,8 @@ def Clean():
     if os.path.exists(API_DIR + BUILD_DIR):
         logger.info("Cleaning '" + API_DIR + BUILD_DIR + "' ...")
         shutil.rmtree(API_DIR + BUILD_DIR)
+    
+    if os.path.exists(API_DIR + BIN_DIR):
         logger.info("Cleaning '" + API_DIR + BIN_DIR + "' ...")
         shutil.rmtree(API_DIR + BIN_DIR)
 
@@ -89,6 +91,8 @@ def Clean():
     if os.path.exists(TEST_DIR + BUILD_DIR):
         logger.info("Cleaning '" + TEST_DIR + BUILD_DIR + "' ...")
         shutil.rmtree(TEST_DIR + BUILD_DIR)
+        
+    if os.path.exists(TEST_DIR + BIN_DIR):
         logger.info("Cleaning '" + TEST_DIR + BIN_DIR + "' ...")
         shutil.rmtree(TEST_DIR + BIN_DIR)
 
@@ -284,23 +288,23 @@ if SetupProject("Test", TEST_DIR, useShell, buildDir64, CMAKE_COMMANDS64) is Fal
     failureCount += 1
 
 # If Windows, make a Build All solution ...
-if platform == "win32" or platform == "win64":
-    MakeDirectory(PROJECT_NAME)
+#if platform == "win32" or platform == "win64":
+MakeDirectory(PROJECT_NAME)
 
-    # The Build All project has to step one directory further back
-    CMAKE_COMMANDS32[-1] = "../../../"
-    CMAKE_COMMANDS64[-1] = "../../../"
+# The Build All project has to step one directory further back
+CMAKE_COMMANDS32[-1] = "../../../"
+CMAKE_COMMANDS64[-1] = "../../../"
 
-    if SetupProject(PROJECT_NAME, PROJECT_NAME + "/", useShell, buildDir32, CMAKE_COMMANDS32) is False:
-        successArray[4][1] = "Failed"
-        failureCount += 1
+if SetupProject(PROJECT_NAME, PROJECT_NAME + "/", useShell, buildDir32, CMAKE_COMMANDS32) is False:
+    successArray[4][1] = "Failed"
+    failureCount += 1
 
-    if SetupProject(PROJECT_NAME, PROJECT_NAME + "/", useShell, buildDir64, CMAKE_COMMANDS64) is False:
-        successArray[5][1] = "Failed"
-        failureCount += 1
-else:
-    successArray[4][1] = "Skipped"
-    successArray[5][1] = "Skipped"
+if SetupProject(PROJECT_NAME, PROJECT_NAME + "/", useShell, buildDir64, CMAKE_COMMANDS64) is False:
+    successArray[5][1] = "Failed"
+    failureCount += 1
+#else:
+#    successArray[4][1] = "Skipped"
+#    successArray[5][1] = "Skipped"
 
 # ---------------------------------------------------------------------- #
 # - Print Results                                                      - #
