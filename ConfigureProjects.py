@@ -15,11 +15,9 @@ from sys import platform
 PROJECT_NAME         = "EnvSetupTest"
 COMPILER_WIN         = "msvc141"                        # Compiler identifier added to library output (example: API_msvc141.dll)
 COMPILER_LINUX       = ""                               # Compiler identifier added to library output
-COMPILER_OSX         = ""                               # Compiler identifier added to library output
 GENERATOR_WIN32      = "Visual Studio 15 2017"          # CMake generator to use for Windows x86
 GENERATOR_WIN64      = "Visual Studio 15 2017 Win64"    # CMake generator to use for Windows x64
 GENERATOR_LINUX      = "Unix Makefiles"                 # CMake generator to use for Linux
-GENERATOR_OSX        = "Xcode"                          # CMake generator to use for OS X
 API_DIR              = "API/"                           # Main directory for the API project(s)
 TEST_DIR             = "Test/"                          # Main directory for the Test project(s)
 BIN_DIR              = "bin/"                           # Binaries subdirectory within project directories
@@ -54,7 +52,7 @@ class cd:
         logger.info("cd '" + self.savedPath + "'")
     
 # ---------------------------------------------------------------------- #    
-# - Make Directory helper                                              - #
+# - `ake Directory helper                                              - #
 # ---------------------------------------------------------------------- #
 
 def MakeDirectory(dirName):
@@ -78,28 +76,15 @@ def Clean():
         logger.info("Cleaning '" + VENDOR_DIR + "' ...")
         shutil.rmtree(VENDOR_DIR)
 
-    # Clean API
-    if os.path.exists(API_DIR + BUILD_DIR):
-        logger.info("Cleaning '" + API_DIR + BUILD_DIR + "' ...")
-        shutil.rmtree(API_DIR + BUILD_DIR)
-    
-    if os.path.exists(API_DIR + BIN_DIR):
-        logger.info("Cleaning '" + API_DIR + BIN_DIR + "' ...")
-        shutil.rmtree(API_DIR + BIN_DIR)
-
-    # Clean Test
-    if os.path.exists(TEST_DIR + BUILD_DIR):
-        logger.info("Cleaning '" + TEST_DIR + BUILD_DIR + "' ...")
-        shutil.rmtree(TEST_DIR + BUILD_DIR)
-        
-    if os.path.exists(TEST_DIR + BIN_DIR):
-        logger.info("Cleaning '" + TEST_DIR + BIN_DIR + "' ...")
-        shutil.rmtree(TEST_DIR + BIN_DIR)
-
     # Clean Build All
-    if os.path.exists(PROJECT_NAME):
-        logger.info("Cleaning '" + PROJECT_NAME + "' ...")
-        shutil.rmtree(PROJECT_NAME)
+    if os.path.exists("build/"):
+        logger.info("Cleaning 'build/' ...")
+        shutil.rmtree("build/")
+
+    # Clean Bin
+    if os.path.exists("bin/"):
+        logger.info("Cleaning 'bin/' ...")
+        shutil.rmtree("bin/")
 
     logger.info("... Cleaning complete.")
 
@@ -122,9 +107,6 @@ def GetLinuxCommand():
     CMAKE_COMMANDS64[3]  = "-DCMAKE_CXX_COMPILER=/usr/bin/g++"
     CMAKE_COMMANDS32[5]  = GENERATOR_LINUX
     CMAKE_COMMANDS64[5]  = GENERATOR_LINUX
-
-def GetOSXCommand():
-    logger.info("Detected OS X operating system.")
 
 # ---------------------------------------------------------------------- #
 # - Pull Third Party Libraries                                         - #
@@ -163,30 +145,27 @@ def GetVendors():
 # - Project Setup                                                      - #
 # ---------------------------------------------------------------------- #
 
-def SetupProject(projectName, projectDir, useShell, buildDir, command):
-    logger.info("Configuring " + projectName + " projects ...")
-    logger.info("Verifying " + projectName + " directory '" + projectDir + "'")
+def SetupSolution(buildDir, command):
+    logger.info("Verifying '" + buildDir + "' directory ...")
 
-    if not os.path.exists(projectDir):
-        logger.error(projectName + " directory not found. Exiting " + projectName + " setup.")
-        return False
-
-    buildPath = projectDir + buildDir
-
-    logger.info("Verifying Test directory '" + buildPath + "'")
-
-    if MakeDirectory(buildPath) is False:
-        return False
-
-    with cd(buildPath):
+    if not os.path.exists(buildDir):
+        logger.info("... does not exist. Attempting to create ...")
+        if MakeDirectory(buildDir) is False:
+            logger.error("... failed.")
+            return False
+        else:
+            logger.info("... succeeded.")
+    
+    with cd(buildDir):
         logger.info(" ".join(command))
-        retVal = subprocess.check_call(command, stderr=subprocess.STDOUT, shell=useShell)
+        retVal = subprocess.check_call(command, stderr=subprocess.STDOUT, shell=False)
 
         if retVal == 0:
-            logger.info("... " + projectName + " setup returned " + str(retVal))
+            logger.info("... returned " + str(retVal))
         else:
-            logger.error("... " + projectName + " setup returned " + str(retVal))
+            logger.error("... returned " + str(retVal))
             return False
+
     return True
 
 # ---------------------------------------------------------------------- #
@@ -260,58 +239,26 @@ else:
 # - Configure projects                                                 - #
 # ---------------------------------------------------------------------- #
 
-successArray = [["API x86", "Success"],
-                ["API x64", "Success"],
-                ["Test x86", "Success"],
-                ["Test x64", "Success"],
-                ["Build All x86", "Success"],
-                ["Build All x64", "Success"]]
+successArray = [["All x86", "Success"],
+                ["All x64", "Success"]]
 
 failureCount = 0
 
-# Setup API Project
-if SetupProject("API", API_DIR, useShell, buildDir32, CMAKE_COMMANDS32) is False:
+if SetupSolution(buildDir32, CMAKE_COMMANDS32) is False:
     successArray[0][1] = "Failed"
     failureCount += 1
 
-if SetupProject("API", API_DIR, useShell, buildDir64, CMAKE_COMMANDS64) is False:
+if SetupSolution(buildDir64, CMAKE_COMMANDS64) is False:
     successArray[1][1] = "Failed"
     failureCount += 1
-
-# Setup Test Project
-if SetupProject("Test", TEST_DIR, useShell, buildDir32, CMAKE_COMMANDS32) is False:
-    successArray[2][1] = "Failed"
-    failureCount += 1
-
-if SetupProject("Test", TEST_DIR, useShell, buildDir64, CMAKE_COMMANDS64) is False:
-    successArray[3][1] = "Failed"
-    failureCount += 1
-
-# If Windows, make a Build All solution ...
-#if platform == "win32" or platform == "win64":
-MakeDirectory(PROJECT_NAME)
-
-# The Build All project has to step one directory further back
-CMAKE_COMMANDS32[-1] = "../../../"
-CMAKE_COMMANDS64[-1] = "../../../"
-
-if SetupProject(PROJECT_NAME, PROJECT_NAME + "/", useShell, buildDir32, CMAKE_COMMANDS32) is False:
-    successArray[4][1] = "Failed"
-    failureCount += 1
-
-if SetupProject(PROJECT_NAME, PROJECT_NAME + "/", useShell, buildDir64, CMAKE_COMMANDS64) is False:
-    successArray[5][1] = "Failed"
-    failureCount += 1
-#else:
-#    successArray[4][1] = "Skipped"
-#    successArray[5][1] = "Skipped"
 
 # ---------------------------------------------------------------------- #
 # - Print Results                                                      - #
 # ---------------------------------------------------------------------- #
 
-successCount = 6 - failureCount 
+successCount = 2 - failureCount 
 
+logger.info("")
 logger.info("-- Configuration Result (" + str(successCount) + " succeeded, " + str(failureCount) + " failed) --")
 
 for pair in successArray:

@@ -8,7 +8,7 @@ import sys
 
 from sys import platform
 
-BUILDALL_DIR = "EnvSetupTest/build/"
+BUILDALL_DIR = "build/"
 
 # ---------------------------------------------------------------------- #
 # - Context manager for changing the current working directory         - #
